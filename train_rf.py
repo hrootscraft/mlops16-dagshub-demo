@@ -1,0 +1,98 @@
+import mlflow
+import mlflow.sklearn
+from mlflow.models import infer_signature
+
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, confusion_matrix
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+import dagshub
+
+dagshub.init(repo_owner="hrootscraft", repo_name="mlops16-dagshub-demo", mlflow=True)
+
+# MLflow setup
+mlflow.set_tracking_uri("https://dagshub.com/hrootscraft/mlops16-dagshub-demo.mlflow")
+mlflow.set_experiment("iris_rf")
+
+# Data
+iris = load_iris()
+X = iris.data
+y = iris.target
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# Model/params
+max_depth = 8
+n_estimators = 30
+random_state = 42
+
+with mlflow.start_run():
+    # log params
+    mlflow.log_params(
+        {
+            "n_estimators": n_estimators,
+            "max_depth": max_depth,
+            "random_state": random_state,
+            "dataset": "iris",
+        }
+    )
+
+    # train
+    rf = RandomForestClassifier(
+        max_depth=max_depth, n_estimators=n_estimators, random_state=random_state
+    )
+    rf.fit(X_train, y_train)
+
+    # metrics
+    y_pred = rf.predict(X_test)
+    acc = accuracy_score(y_test, y_pred)
+    mlflow.log_metric("accuracy", acc)
+    print("accuracy", acc)
+
+    # confusion matrix as a figure (cleaner than saving then logging)
+    cm = confusion_matrix(y_test, y_pred)
+    plt.figure(figsize=(6, 6))
+    sns.heatmap(
+        cm,
+        annot=True,
+        fmt="d",
+        cmap="Blues",
+        xticklabels=iris.target_names,
+        yticklabels=iris.target_names,
+    )
+    plt.ylabel("Actual")
+    plt.xlabel("Predicted")
+    plt.title("Confusion matrix")
+    mlflow.log_figure(plt.gcf(), "confusion_matrix.png")
+    plt.close()
+
+    # signature + input example
+    signature = infer_signature(X_train, rf.predict(X_train))  # input and output schema
+    input_example = X_train[:5]  # first 5 rows
+
+    # log the model itself
+    mlflow.sklearn.log_model(
+        sk_model=rf,
+        artifact_path="random_forest_model",
+        signature=signature,
+        input_example=input_example,
+    )
+
+    # log the training script and tags
+    try:
+        mlflow.log_artifact(__file__)  # with Pathlib can also log a dir
+    except NameError:
+        pass  # __file__ not defined if run interactively
+
+    mlflow.set_tags(
+        {
+            "author": "rutuja",
+            "project": "iris-classification",
+            "algorithm": "random-forest",
+        }
+    )

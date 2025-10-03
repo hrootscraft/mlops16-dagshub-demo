@@ -26,11 +26,11 @@ X_train, X_test, y_train, y_test = train_test_split(
 )
 
 # Model/params
-max_depth = 15
+max_depth = 8 # for run 2 keep 15
 random_state = 42
 
-# with mlflow.start_run(run_name="dt_1"):  # run 1
-with mlflow.start_run(run_name="dt_2"):  # run 2
+with mlflow.start_run(run_name="dt_1"):  # run 1
+# with mlflow.start_run(run_name="dt_2"):  # run 2
     # log params
     mlflow.log_params(
         {
@@ -74,7 +74,7 @@ with mlflow.start_run(run_name="dt_2"):  # run 2
     # log the model
     mlflow.sklearn.log_model(
         sk_model=dt,
-        name="decision_tree_model",
+        artifact_path="decision_tree_model",
         signature=signature,
         input_example=input_example,
     )

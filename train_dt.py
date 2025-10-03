@@ -9,8 +9,11 @@ from sklearn.metrics import accuracy_score, confusion_matrix
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+import dagshub
+dagshub.init(repo_owner='hrootscraft', repo_name='mlops16-dagshub-demo', mlflow=True)
+
 # MLflow setup
-mlflow.set_tracking_uri("http://localhost:5000")
+mlflow.set_tracking_uri("https://dagshub.com/hrootscraft/mlops16-dagshub-demo.mlflow")
 mlflow.set_experiment("iris_dt")
 
 # Data
